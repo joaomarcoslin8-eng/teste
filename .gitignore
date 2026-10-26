@@ -1,0 +1,9 @@
+*.pfx
+*.key
+*.pem
+publisher.json
+update-trust.json
+*.exe
+*.zip
+build/
+config/

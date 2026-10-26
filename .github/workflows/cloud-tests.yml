@@ -1,0 +1,32 @@
+name: Cloud updater checks
+on:
+  push:
+    branches: [zyon-cloud-setup]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  common:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse PowerShell scripts
+        shell: pwsh
+        run: |
+          $failed = @()
+          Get-ChildItem cloud-updates/*.ps1 | ForEach-Object {
+            $tokens=$null; $errors=$null
+            [Management.Automation.Language.Parser]::ParseFile($_.FullName,[ref]$tokens,[ref]$errors) | Out-Null
+            $failed += $errors
+          }
+          if ($failed.Count) { $failed; exit 1 }
+      - name: Signature, package and recovery tests
+        shell: pwsh
+        run: ./tests/cloud-updates/Common.Tests.ps1
+      - name: Native Windows PowerShell 5.1 integration
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./tests/cloud-updates/Windows.Tests.ps1
